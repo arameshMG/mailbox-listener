@@ -1,8 +1,8 @@
 $port = if ($env:PORT) { $env:PORT } else { "5050" }
 $sharedSecret = $env:API_SHARED_SECRET
-$certPath = if ($env:EXO_CERT_PATH) { $env:EXO_CERT_PATH } else { "/app/cert.pfx" }
-$certPassword = $env:EXO_CERT_PASSWORD
 $appId = $env:EXO_APP_ID
+$clientSecret = $env:EXO_CLIENT_SECRET
+$tenantId = $env:EXO_TENANT_ID
 $organization = $env:EXO_ORGANIZATION
 
 $listener = New-Object System.Net.HttpListener
@@ -41,8 +41,16 @@ while ($true) {
 
             Write-Host "Converting mailbox for: $upn"
 
-            $securePassword = ConvertTo-SecureString -String $certPassword -AsPlainText -Force
-            Connect-ExchangeOnline -CertificateFilePath $certPath -CertificatePassword $securePassword -AppId $appId -Organization $organization -ShowBanner:$false
+            # Get an access token using the client secret 
+            $tokenBody = @{
+                client_id     = $appId
+                client_secret = $clientSecret
+                scope         = "https://outlook.office365.com/.default"
+                grant_type    = "client_credentials"
+            }
+            $tokenResponse = Invoke-RestMethod -Uri "https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token" -Method POST -Body $tokenBody
+
+            Connect-ExchangeOnline -AccessToken $tokenResponse.access_token -Organization $organization -ShowBanner:$false
 
             Set-Mailbox -Identity $upn -Type Shared
 
