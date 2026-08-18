@@ -52,13 +52,15 @@ while ($true) {
 
             Connect-ExchangeOnline -AccessToken $tokenResponse.access_token -Organization $organization -ShowBanner:$false
 
-            Set-Mailbox -Identity $upn -Type Shared
-
-            Disconnect-ExchangeOnline -Confirm:$false
-
-            Write-Host "Successfully converted: $upn"
-            $responseText = '{"status":"converted","userPrincipalName":"' + $upn + '"}'
-            $response.StatusCode = 200
+            try {
+                Set-Mailbox -Identity $upn -Type Shared -ErrorAction Stop
+                Write-Host "Successfully converted: $upn"
+                $responseText = '{"status":"converted","userPrincipalName":"' + $upn + '"}'
+                $response.StatusCode = 200
+            }
+            finally {
+                Disconnect-ExchangeOnline -Confirm:$false
+            }
         }
     }
     catch {
