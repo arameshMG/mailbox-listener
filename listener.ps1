@@ -34,6 +34,7 @@ while ($true) {
 
             $body = $rawBody | ConvertFrom-Json
             $upn = $body.userPrincipalName
+            $grantAccessUpn = $body.grantAccessUpn   # optional — UPN of whoever should get mailbox access
 
             if ([string]::IsNullOrWhiteSpace($upn)) {
                 throw "userPrincipalName was empty or missing in request body"
@@ -41,7 +42,7 @@ while ($true) {
 
             Write-Host "Converting mailbox for: $upn"
 
-            # Get an access token using the client secret 
+            # Get an access token using the client secret
             $tokenBody = @{
                 client_id     = $appId
                 client_secret = $clientSecret
@@ -55,7 +56,17 @@ while ($true) {
             try {
                 Set-Mailbox -Identity $upn -Type Shared -ErrorAction Stop
                 Write-Host "Successfully converted: $upn"
-                $responseText = '{"status":"converted","userPrincipalName":"' + $upn + '"}'
+
+                $permissionGranted = $false
+                if (-not [string]::IsNullOrWhiteSpace($grantAccessUpn)) {
+                    Write-Host "Granting Full Access + Send As to: $grantAccessUpn"
+                    Add-MailboxPermission -Identity $upn -User $grantAccessUpn -AccessRights FullAccess -InheritanceType All -AutoMapping $true -Confirm:$false -ErrorAction Stop | Out-Null
+                    Add-RecipientPermission -Identity $upn -Trustee $grantAccessUpn -AccessRights SendAs -Confirm:$false -ErrorAction Stop | Out-Null
+                    $permissionGranted = $true
+                    Write-Host "Successfully granted access to: $grantAccessUpn"
+                }
+
+                $responseText = '{"status":"converted","userPrincipalName":"' + $upn + '","permissionGranted":' + $permissionGranted.ToString().ToLower() + '}'
                 $response.StatusCode = 200
             }
             finally {
