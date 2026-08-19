@@ -34,7 +34,7 @@ while ($true) {
 
             $body = $rawBody | ConvertFrom-Json
             $upn = $body.userPrincipalName
-            $grantAccessUpn = $body.grantAccessUpn   # optional — UPN of whoever should get mailbox access
+            $grantAccessUpn = $body.grantAccessUpn
 
             if ([string]::IsNullOrWhiteSpace($upn)) {
                 throw "userPrincipalName was empty or missing in request body"
