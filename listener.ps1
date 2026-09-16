@@ -60,7 +60,12 @@ while ($true) {
             Connect-ExchangeOnline -AccessToken $tokenResponse.access_token -Organization $organization -ShowBanner:$false
 
             try {
-                Add-DistributionGroupMember -Identity $dlIdentity -Member $upn -ErrorAction Stop
+                $group = Get-Recipient -Identity $dlIdentity -ErrorAction Stop
+                if ($group.RecipientTypeDetails -eq "GroupMailbox") {
+                    Add-UnifiedGroupLinks -Identity $dlIdentity -LinkType Members -Links $upn -ErrorAction Stop
+                } else {
+                    Add-DistributionGroupMember -Identity $dlIdentity -Member $upn -ErrorAction Stop
+                }
                 Write-Host "Successfully added $upn to $dlIdentity"
 
                 $responseText = '{"status":"added","userPrincipalName":"' + $upn + '","distributionListIdentity":"' + $dlIdentity + '"}'
@@ -69,6 +74,7 @@ while ($true) {
             finally {
                 Disconnect-ExchangeOnline -Confirm:$false
             }
+
         }
         elseif ($request.Url.AbsolutePath -eq "/remove-from-distribution-list") {
             $reader = New-Object System.IO.StreamReader($request.InputStream)
