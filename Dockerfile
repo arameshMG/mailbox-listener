@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/powershell:7.4-ubuntu-22.04
+FROM mcr.microsoft.com/powershell:7.5-ubuntu-24.04
 
 RUN pwsh -NoLogo -NonInteractive -Command \
     "Install-Module -Name ExchangeOnlineManagement -Force -Scope AllUsers -Repository PSGallery"
